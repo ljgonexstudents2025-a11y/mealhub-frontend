@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>MealHub – Customer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <img src="./brand.svg" alt="MealHub" class="brand" />
+    <h1>Order Meals</h1>
+    <nav><a href="./restaurant.html">Restaurant View</a></nav>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Choose area</h2>
+      <form id="areaForm">
+        <div class="row">
+          <label>Delivery area</label>
+          <select id="areaSelect" required>
+            <option value="" selected disabled>Pick your area</option>
+            <option>Central</option>
+            <option>North</option>
+            <option>South</option>
+            <option>East</option>
+            <option>West</option>
+          </select>
+        </div>
+      </form>
+    </section>
+
+    <section class="card" id="mealsCard" hidden>
+      <h2>Meals in <span id="areaName"></span></h2>
+      <form id="orderForm">
+        <div id="mealsList" class="list"></div>
+
+        <div class="row">
+          <label>Your name</label>
+          <input name="customerName" placeholder="Optional" />
+        </div>
+
+        <div class="actions">
+          <button type="submit">Place order</button>
+        </div>
+      </form>
+      <p id="orderStatus" class="status"></p>
+    </section>
+
+    <section class="card" id="confirmCard" hidden>
+      <h2>Order confirmed 🎉</h2>
+      <p id="confirmText"></p>
+      <div class="actions">
+        <button id="newOrder" class="secondary">New order</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="./config.js"></script>
+  <script src="./app.js"></script>
+  <script>
+    const areaSelect = document.getElementById('areaSelect');
+    const mealsCard  = document.getElementById('mealsCard');
+    const mealsList  = document.getElementById('mealsList');
+    const areaName   = document.getElementById('areaName');
+    const orderForm  = document.getElementById('orderForm');
+    const orderStatus= document.getElementById('orderStatus');
+    const confirmCard= document.getElementById('confirmCard');
+    const confirmText= document.getElementById('confirmText');
+    const newOrder   = document.getElementById('newOrder');
+
+    areaSelect.addEventListener('change', async () => {
+      const area = areaSelect.value;
+      if (!area) return;
+
+      mealsCard.hidden = true;
+      orderStatus.textContent = 'Loading meals...';
+      const meals = await window.MealHub.listMealsByArea(area);
+
+      mealsList.innerHTML = meals.length
+        ? meals.map(m => `
+          <label class="line">
+            <input type="checkbox" name="item" value="${encodeURIComponent(m.PartitionKey)}|${encodeURIComponent(m.RowKey)}"
+                   data-name="${m.Name}" data-price="${m.Price}" data-prep="${m.PrepMinutes}">
+            <span><strong>${m.Name}</strong> — ${m.Description || ''}</span>
+            <span>$${Number(m.Price).toFixed(2)}</span>
+          </label>
+        `).join('')
+        : '<p>No meals in this area yet.</p>';
+
+      areaName.textContent = area;
+      orderStatus.textContent = '';
+      mealsCard.hidden = false;
+    });
+
+    orderForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const checked = [...orderForm.querySelectorAll('input[name="item"]:checked')];
+      if (!checked.length) {
+        orderStatus.textContent = 'Pick at least one meal.';
+        return;
+      }
+
+      const total = checked.reduce((s, el) => s + Number(el.dataset.price), 0);
+      // Simple ETA heuristic: max prep + 10 minutes delivery
+      const eta = Math.max(...checked.map(el => Number(el.dataset.prep))) + 10;
+
+      confirmText.textContent =
+        `Thanks! Your order of ${checked.length} item(s) totals $${total.toFixed(2)}.
+         Estimated delivery time ~ ${eta} minutes.`;
+
+      mealsCard.hidden = true;
+      confirmCard.hidden = false;
+    });
+
+    newOrder.addEventListener('click', () => {
+      confirmCard.hidden = true;
+      mealsCard.hidden = true;
+      areaSelect.value = '';
+    });
+  </script>
+</body>
+</html>
