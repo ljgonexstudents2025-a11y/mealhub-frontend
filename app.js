@@ -1,3 +1,33 @@
+// Blob Storage
+const BLOB_BASE = `https://${cfg.STORAGE_ACCOUNT}.blob.core.windows.net`;
+const BLOB_CONTAINER = cfg.BLOB_CONTAINER;
+
+function blobUrl(blobName) {
+  return `${BLOB_BASE}/${BLOB_CONTAINER}/${encodeURIComponent(blobName)}?${SAS}`;
+}
+
+async function uploadMealImage(file, area, name) {
+  if (!file) return;
+
+  const blobName = `${slug(area)}/${slug(name)}-${file.name}`;
+  const url = blobUrl(blobName);
+
+  const res = await fetch(url, {
+    method: "PUT",
+    headers: {
+      "x-ms-blob-type": "BlockBlob",
+      "Content-Type": file.type
+    },
+    body: file
+  });
+
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(`Blob upload failed: ${res.status} ${t}`);
+  }
+
+  return blobName;
+}
 // Minimal Azure Table client for the browser using SAS
 (function () {
   const cfg = window.APP_CONFIG;
@@ -87,3 +117,4 @@
     listMealsByArea: listByArea
   };
 })();
+
