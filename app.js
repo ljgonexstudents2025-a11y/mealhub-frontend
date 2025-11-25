@@ -1,40 +1,15 @@
-// Blob Storage
-const BLOB_BASE = `https://${cfg.STORAGE_ACCOUNT}.blob.core.windows.net`;
-const BLOB_CONTAINER = cfg.BLOB_CONTAINER;
-
-function blobUrl(blobName) {
-  return `${BLOB_BASE}/${BLOB_CONTAINER}/${encodeURIComponent(blobName)}?${SAS}`;
-}
-
-async function uploadMealImage(file, area, name) {
-  if (!file) return;
-
-  const blobName = `${slug(area)}/${slug(name)}-${file.name}`;
-  const url = blobUrl(blobName);
-
-  const res = await fetch(url, {
-    method: "PUT",
-    headers: {
-      "x-ms-blob-type": "BlockBlob",
-      "Content-Type": file.type
-    },
-    body: file
-  });
-
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`Blob upload failed: ${res.status} ${t}`);
-  }
-
-  return blobName;
-}
-// Minimal Azure Table client for the browser using SAS
+// Minimal Azure Table + Blob client for the browser using SAS
 (function () {
   const cfg = window.APP_CONFIG;
 
+  // --- Table Storage base ---
   const BASE = `https://${cfg.STORAGE_ACCOUNT}.table.core.windows.net`;
   const TABLE_MEALS = cfg.TABLE_MEALS || 'meals1';
   const SAS = cfg.SAS_TOKEN; // must be URL-encoded (keep exactly as copied from Azure)
+
+  // --- Blob Storage base ---
+  const BLOB_BASE = `https://${cfg.STORAGE_ACCOUNT}.blob.core.windows.net`;
+  const BLOB_CONTAINER = cfg.BLOB_CONTAINER || 'mealimages';
 
   const ODATA_HEADERS = {
     'Accept': 'application/json;odata=nometadata',
@@ -53,9 +28,42 @@ async function uploadMealImage(file, area, name) {
   }
 
   function slug(s) {
-    return String(s).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g,'');
+    return String(s)
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
   }
 
+  // ---------- BLOB HELPERS ----------
+  function blobUrl(blobName) {
+    return `${BLOB_BASE}/${BLOB_CONTAINER}/${encodeURIComponent(blobName)}?${SAS}`;
+  }
+
+  async function uploadMealImage(file, area, name) {
+    if (!file) return;
+
+    const blobName = `${slug(area || 'general')}/${slug(name || file.name)}-${file.name}`;
+    const url = blobUrl(blobName);
+
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'x-ms-blob-type': 'BlockBlob',
+        'Content-Type': file.type || 'application/octet-stream'
+      },
+      body: file
+    });
+
+    if (!res.ok) {
+      const t = await res.text();
+      throw new Error(`Blob upload failed: ${res.status} ${res.statusText} – ${t}`);
+    }
+
+    return blobName;
+  }
+
+  // ---------- TABLE HELPERS ----------
   async function insertEntity(table, data) {
     const res = await fetch(tableUrl(table), {
       method: 'POST',
@@ -112,9 +120,15 @@ async function uploadMealImage(file, area, name) {
     return true;
   }
 
+  // Expose a single global object
   window.MealHub = {
     addOrUpdateMeal,
-    listMealsByArea: listByArea
+    listMealsByArea: listByArea,
+    uploadMealImage
   };
 })();
+
+
+
+
 
