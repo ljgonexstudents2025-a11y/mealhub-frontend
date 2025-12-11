@@ -11,6 +11,7 @@
   // --- Blob Storage base ---
   const BLOB_BASE = `https://${cfg.STORAGE_ACCOUNT}.blob.core.windows.net`;
   const BLOB_CONTAINER = cfg.BLOB_CONTAINER || 'mealimages';
+  const RESTAURANT_LOGOS_CONTAINER = 'restaurantlogos';
 
   const ODATA_HEADERS = {
     'Accept': 'application/json;odata=nometadata',
@@ -37,8 +38,8 @@
   }
 
   // ---------- BLOB HELPERS ----------
-  function blobUrl(blobName) {
-    return `${BLOB_BASE}/${BLOB_CONTAINER}/${encodeURIComponent(blobName)}?${SAS}`;
+  function blobUrl(blobName, container = BLOB_CONTAINER) {
+    return `${BLOB_BASE}/${container}/${encodeURIComponent(blobName)}?${SAS}`;
   }
 
   async function uploadMealImage(file, area, name) {
@@ -110,7 +111,14 @@
     if (!res.ok) throw new Error(`Query failed: ${res.status}`);
     const data = await res.json();
     const restaurants = Array.isArray(data) ? data : (data.value || []);
-    return restaurants;
+    
+    // Add image URLs to restaurants from restaurantlogos container
+    return restaurants.map(restaurant => {
+      if (restaurant.ImageBlobName) {
+        restaurant.ImageUrl = blobUrl(restaurant.ImageBlobName, RESTAURANT_LOGOS_CONTAINER);
+      }
+      return restaurant;
+    });
   }
 
   async function addOrUpdateMeal(formData) {
