@@ -9,44 +9,44 @@
 <body>
   <header class="topbar">
     <img src="./brand.svg" alt="MealHub" class="brand" />
-    <h1>Restaurant Console</h1>
-    <nav><a href="./customer.html">Customer View</a></nav>
+    <h1>Restaurant Dashboard</h1>
+    <nav><a href="./customer.html">Customer Dashboard</a></nav>
   </header>
 
   <main class="container">
     <section class="card">
-      <h2>Register / Update Meal</h2>
-      <p class="info-text">Register meals to Azure Table Storage. All fields marked with * are required.</p>
+      <h2>Register / Update Meal Menu</h2>
+      <p class="info-text">Register meals to MealHub! (* are required fields!)</p>
       
       <form id="mealForm">
         <div class="row">
           <label>Restaurant name *</label>
-          <input name="restaurant" placeholder="e.g., Bella Pasta" required />
-          <small>The name of your restaurant</small>
+          <input name="restaurant" placeholder="Honest Greens" required />
+          <small>Enter the name of your restaurant</small>
         </div>
         
         <div class="row">
           <label>Dish name *</label>
-          <input name="name" placeholder="e.g., Margherita Pizza" required />
-          <small>The name of the dish you're offering</small>
+          <input name="name" placeholder="Salmon Bowl" required />
+          <small>Enter the name of the dish</small>
         </div>
         
         <div class="row">
           <label>Description</label>
           <textarea name="description" rows="3" placeholder="Brief description of the dish"></textarea>
-          <small>Optional: Describe the ingredients, taste, or special features</small>
+          <small>Optional: Tell us about the dish!</small>
         </div>
         
         <div class="row">
-          <label>Estimated preparation time (minutes) *</label>
-          <input name="prep" type="number" min="1" step="1" placeholder="e.g., 30" required />
-          <small>How long it takes to prepare this dish</small>
+          <label>Prep Time *</label>
+          <input name="prep" type="number" min="1" step="1" placeholder="30" required />
+          <small>How long does it takes to make the dish</small>
         </div>
         
         <div class="row">
           <label>Price *</label>
-          <input name="price" type="number" min="0" step="0.01" placeholder="e.g., 12.99" required />
-          <small>Price in dollars (e.g., 12.99)</small>
+          <input name="price" type="number" min="0" step="0.01" placeholder="12.99" required />
+          <small>Price in dollars $12.99</small>
         </div>
         
         <div class="row">
@@ -57,46 +57,23 @@
             <option value="Chamberi">Chamberí</option>
             <option value="Chamartin">Chamartín</option>
           </select>
-          <small>The Madrid neighborhood where you can deliver this meal (used as PartitionKey in Azure Table Storage)</small>
+          <small>The Madrid neighborhood where you can deliver this meal</small>
         </div>
         
         <div class="row">
           <label>Meal image (optional)</label>
           <input name="image" type="file" accept="image/*">
-          <small>Upload an appetizing photo of your dish (stored in Azure Blob Storage)</small>
-        </div>
-        
-        <div class="row info-box">
-          <strong>ℹ️ How it works:</strong>
-          <ul>
-            <li><strong>PartitionKey:</strong> Delivery area (for efficient querying by location)</li>
-            <li><strong>RowKey:</strong> URL-safe version of the dish name (unique identifier)</li>
-            <li><strong>Storage:</strong> All data is saved to Azure Table Storage</li>
-            <li><strong>Updates:</strong> Submitting the same dish name in the same area will update the existing entry</li>
-          </ul>
+          <small>Upload an photo of your dish</small>
         </div>
         
         <div class="actions">
-          <button type="submit">Save meal to Azure Table Storage</button>
+          <button type="submit">Save meal</button>
           <button type="reset" class="secondary">Clear form</button>
         </div>
       </form>
       
       <p id="status" class="status"></p>
     </section>
-
-    <section class="card">
-      <h3>✅ Required Fields Summary</h3>
-      <ul class="checklist">
-        <li><strong>Dish name:</strong> The name of the meal</li>
-        <li><strong>Description:</strong> Details about the dish (optional but recommended)</li>
-        <li><strong>Estimated preparation time:</strong> In minutes</li>
-        <li><strong>Price:</strong> Cost of the dish</li>
-        <li><strong>Delivery area:</strong> Madrid neighborhood (Salamanca, Chamberí, Chamartín)</li>
-      </ul>
-      <p class="success-note">✓ All entries are automatically stored in Azure Table Storage when you click "Save meal"</p>
-    </section>
-  </main>
 
   <script src="./config.js"></script>
   <script src="./app.js"></script>

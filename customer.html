@@ -48,7 +48,7 @@
       <div id="mealsList" class="meals-list"></div>
       
       <div id="cartSection" class="cart-section" hidden>
-        <h3>Your Order</h3>
+        <h3>🛒 Your Order (<span id="cartCount">0</span> items)</h3>
         <div id="cartItems" class="cart-items"></div>
         <div class="cart-total">
           <strong>Total: $<span id="cartTotal">0.00</span></strong>
@@ -100,6 +100,7 @@
     const cartSection = document.getElementById('cartSection');
     const cartItems = document.getElementById('cartItems');
     const cartTotal = document.getElementById('cartTotal');
+    const cartCount = document.getElementById('cartCount');
     const orderForm = document.getElementById('orderForm');
     const orderStatus = document.getElementById('orderStatus');
     const confirmCard = document.getElementById('confirmCard');
@@ -160,17 +161,28 @@
       currentRestaurant = restaurantNameParam;
       restaurantName.textContent = restaurantNameParam;
       orderStatus.textContent = 'Loading menu...';
+      orderStatus.className = 'status loading';
+      mealsList.innerHTML = '<p style="text-align: center; padding: 40px; color: var(--muted);">Loading delicious meals...</p>';
 
       try {
         const meals = await window.MealHub.listMealsByArea(currentArea);
         const restaurantMeals = meals.filter(m => (m.Restaurant || 'Unknown Restaurant') === restaurantNameParam);
+
+        if (restaurantMeals.length === 0) {
+          mealsList.innerHTML = '<p style="text-align: center; padding: 40px; color: var(--muted);">No meals available from this restaurant yet.</p>';
+          orderStatus.textContent = '';
+          orderStatus.className = 'status';
+          restaurantsCard.hidden = true;
+          orderingCard.hidden = false;
+          return;
+        }
 
         mealsList.innerHTML = restaurantMeals.map(m => `
           <div class="meal-item">
             ${m.ImageUrl ? `<img src="${m.ImageUrl}" alt="${m.Name}" class="meal-image" />` : ''}
             <div class="meal-details">
               <h4>${m.Name}</h4>
-              <p class="meal-description">${m.Description || ''}</p>
+              <p class="meal-description">${m.Description || 'Delicious meal from ' + restaurantNameParam}</p>
               <div class="meal-meta">
                 <span class="meal-price">$${Number(m.Price).toFixed(2)}</span>
                 <span class="meal-prep">⏱️ ${m.PrepMinutes} min</span>
@@ -183,11 +195,14 @@
         `).join('');
 
         orderStatus.textContent = '';
+        orderStatus.className = 'status';
         restaurantsCard.hidden = true;
         orderingCard.hidden = false;
       } catch (err) {
         console.error(err);
+        mealsList.innerHTML = '';
         orderStatus.textContent = 'Error loading menu: ' + err.message;
+        orderStatus.className = 'status error';
       }
     };
 
@@ -221,16 +236,22 @@
         <div class="cart-item">
           <div class="cart-item-info">
             <strong>${item.name}</strong>
+            <small>${item.restaurant} • ⏱️ ${item.prep} min</small>
           </div>
           <div class="cart-item-price">
             $${item.price.toFixed(2)}
-            <button type="button" class="btn-remove" onclick="removeFromCart(${index})">✕</button>
+            <button type="button" class="btn-remove" onclick="removeFromCart(${index})" title="Remove item">✕</button>
           </div>
         </div>
       `).join('');
       
       const total = cart.reduce((sum, item) => sum + item.price, 0);
+      const itemCount = cart.length;
       cartTotal.textContent = total.toFixed(2);
+      cartCount.textContent = itemCount;
+      
+      // Scroll cart into view when items are added
+      cartSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     clearCartBtn.addEventListener('click', () => {
@@ -244,32 +265,58 @@
 
       if (!cart.length) {
         orderStatus.textContent = 'Your cart is empty.';
+        orderStatus.className = 'status error';
         return;
       }
 
       const total = cart.reduce((sum, item) => sum + item.price, 0);
       const maxPrep = Math.max(...cart.map(item => item.prep));
-      const eta = maxPrep + 10; // Add 10 minutes for delivery
+      const eta = maxPrep + 15; // Add 15 minutes for delivery
 
-      const itemsList = cart.map(item => 
-        `<li>${item.name} - $${item.price.toFixed(2)}</li>`
+      const itemsList = cart.map((item, index) => 
+        `<li>
+          <strong>${item.name}</strong>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+            <span style="color: var(--muted);">⏱️ ${item.prep} min prep</span>
+            <span style="color: var(--brand); font-weight: 700;">$${item.price.toFixed(2)}</span>
+          </div>
+        </li>`
       ).join('');
 
       confirmText.innerHTML = `
         <div class="confirmation-details">
-          <p><strong>Restaurant:</strong> ${currentRestaurant}</p>
-          <p><strong>Delivery Area:</strong> ${currentArea}</p>
-          <p><strong>Delivery Address:</strong> ${orderForm.customerAddress.value}</p>
-          ${orderForm.customerName.value ? `<p><strong>Customer Name:</strong> ${orderForm.customerName.value}</p>` : ''}
-          
-          <h3>Order Items:</h3>
-          <ul class="order-items-list">
-            ${itemsList}
-          </ul>
+          <div style="text-align: center; margin-bottom: 24px;">
+            <div style="font-size: 3em; margin-bottom: 8px;">✅</div>
+            <h3 style="color: var(--brand); margin: 0;">Your order has been placed!</h3>
+          </div>
+
+          <div style="background: rgba(6, 193, 103, 0.1); padding: 16px; border-radius: 12px; margin-bottom: 20px;">
+            <p style="margin: 0;"><strong>📍 Delivery Area:</strong> ${currentArea}</p>
+            <p style="margin: 8px 0 0 0;"><strong>🏠 Delivery Address:</strong> ${orderForm.customerAddress.value}</p>
+            ${orderForm.customerName.value ? `<p style="margin: 8px 0 0 0;"><strong>👤 Customer Name:</strong> ${orderForm.customerName.value}</p>` : ''}
+          </div>
+
+          <div style="background: white; padding: 16px; border-radius: 12px; margin-bottom: 20px;">
+            <h3 style="margin: 0 0 12px 0; color: var(--text);">🍽️ Order from ${currentRestaurant}</h3>
+            <ul class="order-items-list">
+              ${itemsList}
+            </ul>
+          </div>
           
           <div class="order-summary">
-            <p class="total-cost"><strong>Total Cost: $${total.toFixed(2)}</strong></p>
-            <p class="delivery-time"><strong>Estimated Delivery Time: ~${eta} minutes</strong></p>
+            <div style="display: grid; gap: 16px;">
+              <div style="background: linear-gradient(135deg, var(--brand-light) 0%, #d1fae5 100%); padding: 20px; border-radius: 12px; text-align: center;">
+                <div style="font-size: 0.9em; color: var(--muted); margin-bottom: 4px;">Total Amount</div>
+                <div class="total-cost" style="margin: 0 !important;">$${total.toFixed(2)}</div>
+              </div>
+              <div style="background: linear-gradient(135deg, #fff4e6 0%, #ffe4cc 100%); padding: 20px; border-radius: 12px; text-align: center;">
+                <div style="font-size: 0.9em; color: var(--muted); margin-bottom: 4px;">⏰ Estimated Delivery</div>
+                <div class="delivery-time" style="margin: 0 !important; color: var(--accent);">${eta} minutes</div>
+              </div>
+            </div>
+            <p style="text-align: center; color: var(--muted); margin: 20px 0 0 0; font-size: 0.9em;">
+              Your order will arrive by approximately ${new Date(Date.now() + eta * 60000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+            </p>
           </div>
         </div>
       `;
