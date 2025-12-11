@@ -185,7 +185,7 @@
               <p class="meal-description">${m.description || 'Delicious meal from ' + restaurantNameParam}</p>
               <div class="meal-meta">
                 <span class="meal-price">$${Number(m.price).toFixed(2)}</span>
-                <span class="meal-prep">⏱️ ${m.prepMinutes} min</span>
+                <span class="meal-prep">⏱️ ${m.prepMinutes} </span>
               </div>
             </div>
             <button type="button" class="btn-add" onclick="addToCart('${m.PartitionKey}', '${m.RowKey}', '${m.dishName.replace(/'/g, "\\'")}', '${currentRestaurant.replace(/'/g, "\\'")}', ${m.price}, ${m.prepMinutes})">
@@ -277,7 +277,7 @@
         `<li>
           <strong>${item.name}</strong>
           <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-            <span style="color: var(--muted);">⏱️ ${item.prep} min prep</span>
+            <span style="color: var(--muted);">⏱️ ${item.prep} prep</span>
             <span style="color: var(--brand); font-weight: 700;">$${item.price.toFixed(2)}</span>
           </div>
         </li>`
