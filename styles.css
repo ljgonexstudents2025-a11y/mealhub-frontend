@@ -50,3 +50,262 @@ button.secondary { background: var(--brand-2); }
   gap: 10px; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
 }
 .line strong { color: var(--brand-2); }
+
+/* Restaurant cards grid */
+.restaurants-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.restaurant-card {
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.restaurant-card:hover {
+  box-shadow: 0 8px 20px rgba(11, 108, 255, 0.2);
+  transform: translateY(-4px);
+  border-color: var(--brand);
+}
+
+.restaurant-image {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+}
+
+.restaurant-image-placeholder {
+  width: 100%;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
+  font-size: 4em;
+}
+
+.restaurant-info {
+  padding: 16px;
+  text-align: center;
+}
+
+.restaurant-info h3 {
+  margin: 0 0 8px 0;
+  color: var(--brand-2);
+  font-size: 1.2em;
+}
+
+.restaurant-info p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9em;
+}
+
+/* Meals list (inside restaurant ordering) */
+.meals-list {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.meal-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  background: #fff;
+  transition: box-shadow 0.2s;
+}
+
+.meal-item:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.meal-item .meal-image {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.meal-details {
+  flex: 1;
+}
+
+.meal-details h4 {
+  margin: 0 0 6px 0;
+  color: var(--brand-2);
+  font-size: 1.1em;
+}
+
+.meal-description {
+  color: var(--muted);
+  font-size: 0.9em;
+  margin: 0 0 8px 0;
+}
+
+.meal-meta {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.meal-price {
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 1.2em;
+}
+
+.meal-prep {
+  color: var(--muted);
+  font-size: 0.85em;
+}
+
+.btn-add {
+  background: var(--brand);
+  border: none;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.btn-add:hover {
+  background: var(--brand-2);
+}
+
+/* Confirmation details */
+.confirmation-details {
+  background: #f9fafb;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+
+.confirmation-details p {
+  margin: 8px 0;
+}
+
+.confirmation-details h3 {
+  margin: 20px 0 12px 0;
+  color: var(--brand);
+}
+
+.order-items-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+}
+
+.order-items-list li {
+  padding: 8px 12px;
+  background: #fff;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  border-left: 3px solid var(--brand);
+}
+
+.order-summary {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 2px solid var(--brand);
+}
+
+.total-cost {
+  font-size: 1.4em;
+  color: var(--brand-2);
+  margin: 8px 0 !important;
+}
+
+.delivery-time {
+  font-size: 1.1em;
+  color: var(--brand);
+  margin: 8px 0 !important;
+}
+
+/* Restaurant sections */
+
+/* Cart section */
+.cart-section {
+  background: #f0f9ff !important;
+  border: 2px solid var(--brand) !important;
+  margin-top: 24px;
+}
+
+.cart-section h3 {
+  margin: 0 0 16px 0;
+  color: var(--brand);
+}
+
+.cart-items {
+  margin-bottom: 16px;
+}
+
+.cart-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background: #fff;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  border: 1px solid var(--line);
+}
+
+.cart-item-info strong {
+  display: block;
+  color: var(--brand-2);
+}
+
+.cart-item-info small {
+  color: var(--muted);
+  font-size: 0.85em;
+}
+
+.cart-item-price {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.btn-remove {
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.btn-remove:hover {
+  background: #dc2626;
+}
+
+.cart-total {
+  font-size: 1.3em;
+  text-align: right;
+  padding: 12px 0;
+  border-top: 2px solid var(--brand);
+  margin-bottom: 16px;
+  color: var(--brand-2);
+}
