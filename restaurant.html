@@ -1,21 +1,7 @@
 <!doctype html>
 <html lang="en">
-<hea        <div class="row">
-          <label>Delivery area</label>
-          <input name="area" placeholder="e.g., Central, North, South" required />
-          <!-- PartitionKey will be this area -->
-        </div>
-        <div class="row">
-          <label>Meal image (optional)</label>
-          <input name="image" type="file" accept="image/*">
-        </div>
-        <div class="row">
-          <small>
-            Tip: The system uses "Delivery area" as the <code>PartitionKey</code> and a
-            URL-safe version of Dish name as the <code>RowKey</code>. Submitting the same
-            dish updates it.
-          </small>
-        </div>charset="utf-8" />
+<head>
+  <meta charset="utf-8" />
   <title>MealHub – Restaurant</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="./styles.css" />
@@ -30,45 +16,85 @@
   <main class="container">
     <section class="card">
       <h2>Register / Update Meal</h2>
+      <p class="info-text">Register meals to Azure Table Storage. All fields marked with * are required.</p>
+      
       <form id="mealForm">
         <div class="row">
-          <label>Restaurant name</label>
+          <label>Restaurant name *</label>
           <input name="restaurant" placeholder="e.g., Bella Pasta" required />
+          <small>The name of your restaurant</small>
         </div>
+        
         <div class="row">
-          <label>Dish name</label>
+          <label>Dish name *</label>
           <input name="name" placeholder="e.g., Margherita Pizza" required />
+          <small>The name of the dish you're offering</small>
         </div>
+        
         <div class="row">
           <label>Description</label>
-          <textarea name="description" rows="3" placeholder="Short description"></textarea>
+          <textarea name="description" rows="3" placeholder="Brief description of the dish"></textarea>
+          <small>Optional: Describe the ingredients, taste, or special features</small>
         </div>
+        
         <div class="row">
-          <label>Prep time (minutes)</label>
-          <input name="prep" type="number" min="1" step="1" required />
+          <label>Estimated preparation time (minutes) *</label>
+          <input name="prep" type="number" min="1" step="1" placeholder="e.g., 30" required />
+          <small>How long it takes to prepare this dish</small>
         </div>
+        
         <div class="row">
-          <label>Price</label>
-          <input name="price" type="number" min="0" step="0.01" required />
+          <label>Price *</label>
+          <input name="price" type="number" min="0" step="0.01" placeholder="e.g., 12.99" required />
+          <small>Price in dollars (e.g., 12.99)</small>
         </div>
+        
         <div class="row">
-          <label>Delivery area</label>
-          <input name="area" placeholder="e.g., Central, North, South" required />
-          <!-- PartitionKey will be this area -->
+          <label>Delivery area *</label>
+          <select name="area" required>
+            <option value="" selected disabled>Select delivery area</option>
+            <option value="Salamanca">Salamanca</option>
+            <option value="Chamberi">Chamberí</option>
+            <option value="Chamartin">Chamartín</option>
+          </select>
+          <small>The Madrid neighborhood where you can deliver this meal (used as PartitionKey in Azure Table Storage)</small>
         </div>
+        
         <div class="row">
-          <small>
-            Tip: The system uses “Delivery area” as the <code>PartitionKey</code> and a
-            URL-safe version of Dish name as the <code>RowKey</code>. Submitting the same
-            dish updates it.
-          </small>
+          <label>Meal image (optional)</label>
+          <input name="image" type="file" accept="image/*">
+          <small>Upload an appetizing photo of your dish (stored in Azure Blob Storage)</small>
         </div>
+        
+        <div class="row info-box">
+          <strong>ℹ️ How it works:</strong>
+          <ul>
+            <li><strong>PartitionKey:</strong> Delivery area (for efficient querying by location)</li>
+            <li><strong>RowKey:</strong> URL-safe version of the dish name (unique identifier)</li>
+            <li><strong>Storage:</strong> All data is saved to Azure Table Storage</li>
+            <li><strong>Updates:</strong> Submitting the same dish name in the same area will update the existing entry</li>
+          </ul>
+        </div>
+        
         <div class="actions">
-          <button type="submit">Save meal</button>
-          <button type="reset" class="secondary">Clear</button>
+          <button type="submit">Save meal to Azure Table Storage</button>
+          <button type="reset" class="secondary">Clear form</button>
         </div>
       </form>
+      
       <p id="status" class="status"></p>
+    </section>
+
+    <section class="card">
+      <h3>✅ Required Fields Summary</h3>
+      <ul class="checklist">
+        <li><strong>Dish name:</strong> The name of the meal</li>
+        <li><strong>Description:</strong> Details about the dish (optional but recommended)</li>
+        <li><strong>Estimated preparation time:</strong> In minutes</li>
+        <li><strong>Price:</strong> Cost of the dish</li>
+        <li><strong>Delivery area:</strong> Madrid neighborhood (Salamanca, Chamberí, Chamartín)</li>
+      </ul>
+      <p class="success-note">✓ All entries are automatically stored in Azure Table Storage when you click "Save meal"</p>
     </section>
   </main>
 
@@ -80,22 +106,42 @@
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      status.textContent = 'Saving...';
+      status.textContent = 'Saving to Azure Table Storage...';
+      status.className = 'status loading';
 
       try {
         const fd = new FormData(form);
+        
+        // Validate all required fields
+        const restaurant = fd.get('restaurant');
+        const name = fd.get('name');
+        const prep = fd.get('prep');
+        const price = fd.get('price');
+        const area = fd.get('area');
+
+        if (!restaurant || !name || !prep || !price || !area) {
+          throw new Error('Please fill in all required fields');
+        }
+
+        // Save to Azure Table Storage
         await window.MealHub.addOrUpdateMeal(fd);
 
-        status.textContent = 'Saved ✓';
-        form.reset();
+        status.textContent = '✓ Successfully saved to Azure Table Storage!';
+        status.className = 'status success';
+        
+        // Reset form after 2 seconds
+        setTimeout(() => {
+          form.reset();
+          status.textContent = '';
+          status.className = 'status';
+        }, 2000);
       } 
       catch (err) {
         console.error(err);
-        status.textContent = "Error: " + err.message;
+        status.textContent = "❌ Error: " + err.message;
+        status.className = 'status error';
       }
     });
   </script>
 </body>
 </html>
-
-

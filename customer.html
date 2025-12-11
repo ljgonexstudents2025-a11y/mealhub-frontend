@@ -19,14 +19,12 @@
       <h2>Choose delivery area</h2>
       <form id="areaForm">
         <div class="row">
-          <label>Delivery area</label>
+          <label>Delivery area (Madrid neighborhoods)</label>
           <select id="areaSelect" required>
-            <option value="" selected disabled>Pick your area</option>
-            <option>Central</option>
-            <option>North</option>
-            <option>South</option>
-            <option>East</option>
-            <option>West</option>
+            <option value="" selected disabled>Pick your neighborhood</option>
+            <option value="Salamanca">Salamanca</option>
+            <option value="Chamberi">Chamberí</option>
+            <option value="Chamartin">Chamartín</option>
           </select>
         </div>
       </form>
@@ -123,49 +121,37 @@
 
       currentArea = area;
       areaStatus.textContent = 'Loading restaurants...';
+      areaStatus.className = 'status loading';
 
       try {
-        const meals = await window.MealHub.listMealsByArea(area);
+        const restaurants = await window.MealHub.listRestaurantsByArea(area);
         
-        if (!meals.length) {
+        if (!restaurants.length) {
           areaStatus.textContent = 'No restaurants in this area yet.';
+          areaStatus.className = 'status';
           return;
         }
 
-        // Get unique restaurants from meals
-        const restaurantsMap = new Map();
-        meals.forEach(meal => {
-          const restName = meal.Restaurant || 'Unknown Restaurant';
-          if (!restaurantsMap.has(restName)) {
-            restaurantsMap.set(restName, {
-              name: restName,
-              image: meal.ImageUrl || '', // Use first meal's image as restaurant image
-              mealCount: 0
-            });
-          }
-          restaurantsMap.get(restName).mealCount++;
-        });
-
-        const restaurants = Array.from(restaurantsMap.values());
-
         // Display restaurant cards
         restaurantsList.innerHTML = restaurants.map(rest => `
-          <div class="restaurant-card" onclick="selectRestaurant('${rest.name.replace(/'/g, "\\'")}')">
-            ${rest.image ? `<img src="${rest.image}" alt="${rest.name}" class="restaurant-image" />` : '<div class="restaurant-image-placeholder">🍽️</div>'}
+          <div class="restaurant-card" onclick="selectRestaurant('${(rest.Name || rest.RowKey).replace(/'/g, "\\'")}')">
+            ${rest.ImageUrl ? `<img src="${rest.ImageUrl}" alt="${rest.Name || rest.RowKey}" class="restaurant-image" />` : '<div class="restaurant-image-placeholder">🍽️</div>'}
             <div class="restaurant-info">
-              <h3>${rest.name}</h3>
-              <p>${rest.mealCount} meal${rest.mealCount !== 1 ? 's' : ''} available</p>
+              <h3>${rest.Name || rest.RowKey}</h3>
+              <p>${rest.Description || 'Restaurant in ' + area}</p>
             </div>
           </div>
         `).join('');
 
         areaName.textContent = area;
         areaStatus.textContent = '';
+        areaStatus.className = 'status';
         areaCard.hidden = true;
         restaurantsCard.hidden = false;
       } catch (err) {
         console.error(err);
         areaStatus.textContent = 'Error loading restaurants: ' + err.message;
+        areaStatus.className = 'status error';
       }
     });
 

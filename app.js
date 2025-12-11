@@ -5,6 +5,7 @@
   // --- Table Storage base ---
   const BASE = `https://${cfg.STORAGE_ACCOUNT}.table.core.windows.net`;
   const TABLE_MEALS = cfg.TABLE_MEALS || 'meals1';
+  const TABLE_RESTAURANTS = cfg.TABLE_RESTAURANTS || 'Restaurants';
   const SAS = cfg.SAS_TOKEN; // must be URL-encoded (keep exactly as copied from Azure)
 
   // --- Blob Storage base ---
@@ -92,13 +93,24 @@
     // nometadata still returns {value: [...]}; but handle both just in case
     const meals = Array.isArray(data) ? data : (data.value || []);
     
-    // Add image URLs to meals
+    // this adds image URLs to meals
     return meals.map(meal => {
       if (meal.ImageBlobName) {
         meal.ImageUrl = blobUrl(meal.ImageBlobName);
       }
       return meal;
     });
+  }
+
+  async function listRestaurantsByArea(area) {
+    // Query the Restaurants table by area
+    const a = String(area).replace(/'/g, "''");
+    const extra = `&$filter=PartitionKey eq '${encodeURIComponent(a)}'`;
+    const res = await fetch(tableUrl(TABLE_RESTAURANTS, extra), { headers: ODATA_HEADERS });
+    if (!res.ok) throw new Error(`Query failed: ${res.status}`);
+    const data = await res.json();
+    const restaurants = Array.isArray(data) ? data : (data.value || []);
+    return restaurants;
   }
 
   async function addOrUpdateMeal(formData) {
@@ -139,6 +151,7 @@
   window.MealHub = {
     addOrUpdateMeal,
     listMealsByArea: listByArea,
+    listRestaurantsByArea,
     uploadMealImage
   };
 })();

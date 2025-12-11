@@ -1,0 +1,12 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "AZURE_STORAGE_CONNECTION_STRING": "DefaultEndpointsProtocol=https;AccountName=group5five;AccountKey=YOUR_STORAGE_KEY;EndpointSuffix=core.windows.net",
+    "STORAGE_ACCOUNT_NAME": "group5five",
+    "TABLE_MEALS": "meals1",
+    "TABLE_RESTAURANTS": "Restaurants",
+    "BLOB_CONTAINER": "mealimages"
+  }
+}
