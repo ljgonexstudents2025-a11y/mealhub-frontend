@@ -1,7 +1,21 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
+<hea        <div class="row">
+          <label>Delivery area</label>
+          <input name="area" placeholder="e.g., Central, North, South" required />
+          <!-- PartitionKey will be this area -->
+        </div>
+        <div class="row">
+          <label>Meal image (optional)</label>
+          <input name="image" type="file" accept="image/*">
+        </div>
+        <div class="row">
+          <small>
+            Tip: The system uses "Delivery area" as the <code>PartitionKey</code> and a
+            URL-safe version of Dish name as the <code>RowKey</code>. Submitting the same
+            dish updates it.
+          </small>
+        </div>charset="utf-8" />
   <title>MealHub – Restaurant</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="./styles.css" />
@@ -57,10 +71,6 @@
       <p id="status" class="status"></p>
     </section>
   </main>
-  <div class="row">
-  <label>Meal image (optional)</label>
-  <input name="image" type="file" accept="image/*">
-</div>
 
   <script src="./config.js"></script>
   <script src="./app.js"></script>
@@ -69,33 +79,21 @@
     const status = document.getElementById('status');
 
     form.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  status.textContent = 'Saving...';
+      e.preventDefault();
+      status.textContent = 'Saving...';
 
-  try {
-    const fd = new FormData(form);
+      try {
+        const fd = new FormData(form);
+        await window.MealHub.addOrUpdateMeal(fd);
 
-    // 1. Save meal info to Table Storage
-    await window.MealHub.addOrUpdateMeal(fd);
-
-    // 2. Upload the image (if provided)
-    const file = form.image.files[0];
-    if (file) {
-      await window.MealHub.uploadMealImage(
-        file,
-        fd.get("area"),
-        fd.get("name")
-      );
-    }
-
-    status.textContent = 'Saved ✓';
-    form.reset();
-  } 
-  catch (err) {
-    console.error(err);
-    status.textContent = "Error: " + err.message;
-  }
-});
+        status.textContent = 'Saved ✓';
+        form.reset();
+      } 
+      catch (err) {
+        console.error(err);
+        status.textContent = "Error: " + err.message;
+      }
+    });
   </script>
 </body>
 </html>

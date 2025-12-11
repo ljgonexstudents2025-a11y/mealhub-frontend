@@ -14,8 +14,9 @@
   </header>
 
   <main class="container">
-    <section class="card">
-      <h2>Choose area</h2>
+    <!-- Step 1: Choose Area -->
+    <section class="card" id="areaCard">
+      <h2>Choose delivery area</h2>
       <form id="areaForm">
         <div class="row">
           <label>Delivery area</label>
@@ -29,30 +30,58 @@
           </select>
         </div>
       </form>
+      <p id="areaStatus" class="status"></p>
     </section>
 
-    <section class="card" id="mealsCard" hidden>
-      <h2>Meals in <span id="areaName"></span></h2>
-      <form id="orderForm">
-        <div id="mealsList" class="list"></div>
+    <!-- Step 2: Choose Restaurant -->
+    <section class="card" id="restaurantsCard" hidden>
+      <h2>Restaurants in <span id="areaName"></span></h2>
+      <button type="button" id="backToArea" class="secondary" style="margin-bottom: 16px;">← Change area</button>
+      <div id="restaurantsList" class="restaurants-grid"></div>
+    </section>
 
-        <div class="row">
-          <label>Your name</label>
-          <input name="customerName" placeholder="Optional" />
+    <!-- Step 3: Order from Restaurant -->
+    <section class="card" id="orderingCard" hidden>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h2 id="restaurantName">Restaurant Menu</h2>
+        <button type="button" id="backToRestaurants" class="secondary">← Back to restaurants</button>
+      </div>
+      
+      <div id="mealsList" class="meals-list"></div>
+      
+      <div id="cartSection" class="cart-section" hidden>
+        <h3>Your Order</h3>
+        <div id="cartItems" class="cart-items"></div>
+        <div class="cart-total">
+          <strong>Total: $<span id="cartTotal">0.00</span></strong>
         </div>
+        
+        <form id="orderForm">
+          <div class="row">
+            <label>Your name</label>
+            <input name="customerName" placeholder="Your name" />
+          </div>
+          <div class="row">
+            <label>Delivery address</label>
+            <input name="customerAddress" placeholder="Enter your delivery address" required />
+          </div>
 
-        <div class="actions">
-          <button type="submit">Place order</button>
-        </div>
-      </form>
+          <div class="actions">
+            <button type="submit">Place order</button>
+            <button type="button" id="clearCart" class="secondary">Clear cart</button>
+          </div>
+        </form>
+      </div>
+      
       <p id="orderStatus" class="status"></p>
     </section>
 
+    <!-- Step 4: Order Confirmation -->
     <section class="card" id="confirmCard" hidden>
-      <h2>Order confirmed 🎉</h2>
-      <p id="confirmText"></p>
+      <h2>Order confirmed! 🎉</h2>
+      <div id="confirmText"></div>
       <div class="actions">
-        <button id="newOrder" class="secondary">New order</button>
+        <button id="newOrder" class="secondary">Place another order</button>
       </div>
     </section>
   </main>
@@ -60,65 +89,235 @@
   <script src="./config.js"></script>
   <script src="./app.js"></script>
   <script>
+    // DOM elements
     const areaSelect = document.getElementById('areaSelect');
-    const mealsCard  = document.getElementById('mealsCard');
-    const mealsList  = document.getElementById('mealsList');
-    const areaName   = document.getElementById('areaName');
-    const orderForm  = document.getElementById('orderForm');
-    const orderStatus= document.getElementById('orderStatus');
-    const confirmCard= document.getElementById('confirmCard');
-    const confirmText= document.getElementById('confirmText');
-    const newOrder   = document.getElementById('newOrder');
+    const areaCard = document.getElementById('areaCard');
+    const areaStatus = document.getElementById('areaStatus');
+    const restaurantsCard = document.getElementById('restaurantsCard');
+    const restaurantsList = document.getElementById('restaurantsList');
+    const areaName = document.getElementById('areaName');
+    const orderingCard = document.getElementById('orderingCard');
+    const restaurantName = document.getElementById('restaurantName');
+    const mealsList = document.getElementById('mealsList');
+    const cartSection = document.getElementById('cartSection');
+    const cartItems = document.getElementById('cartItems');
+    const cartTotal = document.getElementById('cartTotal');
+    const orderForm = document.getElementById('orderForm');
+    const orderStatus = document.getElementById('orderStatus');
+    const confirmCard = document.getElementById('confirmCard');
+    const confirmText = document.getElementById('confirmText');
+    const backToArea = document.getElementById('backToArea');
+    const backToRestaurants = document.getElementById('backToRestaurants');
+    const clearCartBtn = document.getElementById('clearCart');
+    const newOrder = document.getElementById('newOrder');
 
+    // State
+    let currentArea = '';
+    let currentRestaurant = '';
+    let cart = [];
+
+    // Step 1: Area selected -> Show restaurants
     areaSelect.addEventListener('change', async () => {
       const area = areaSelect.value;
       if (!area) return;
 
-      mealsCard.hidden = true;
-      orderStatus.textContent = 'Loading meals...';
-      const meals = await window.MealHub.listMealsByArea(area);
+      currentArea = area;
+      areaStatus.textContent = 'Loading restaurants...';
 
-      mealsList.innerHTML = meals.length
-        ? meals.map(m => `
-          <label class="line">
-            <input type="checkbox" name="item" value="${encodeURIComponent(m.PartitionKey)}|${encodeURIComponent(m.RowKey)}"
-                   data-name="${m.Name}" data-price="${m.Price}" data-prep="${m.PrepMinutes}">
-            <span><strong>${m.Name}</strong> — ${m.Description || ''}</span>
-            <span>$${Number(m.Price).toFixed(2)}</span>
-          </label>
-        `).join('')
-        : '<p>No meals in this area yet.</p>';
+      try {
+        const meals = await window.MealHub.listMealsByArea(area);
+        
+        if (!meals.length) {
+          areaStatus.textContent = 'No restaurants in this area yet.';
+          return;
+        }
 
-      areaName.textContent = area;
-      orderStatus.textContent = '';
-      mealsCard.hidden = false;
+        // Get unique restaurants from meals
+        const restaurantsMap = new Map();
+        meals.forEach(meal => {
+          const restName = meal.Restaurant || 'Unknown Restaurant';
+          if (!restaurantsMap.has(restName)) {
+            restaurantsMap.set(restName, {
+              name: restName,
+              image: meal.ImageUrl || '', // Use first meal's image as restaurant image
+              mealCount: 0
+            });
+          }
+          restaurantsMap.get(restName).mealCount++;
+        });
+
+        const restaurants = Array.from(restaurantsMap.values());
+
+        // Display restaurant cards
+        restaurantsList.innerHTML = restaurants.map(rest => `
+          <div class="restaurant-card" onclick="selectRestaurant('${rest.name.replace(/'/g, "\\'")}')">
+            ${rest.image ? `<img src="${rest.image}" alt="${rest.name}" class="restaurant-image" />` : '<div class="restaurant-image-placeholder">🍽️</div>'}
+            <div class="restaurant-info">
+              <h3>${rest.name}</h3>
+              <p>${rest.mealCount} meal${rest.mealCount !== 1 ? 's' : ''} available</p>
+            </div>
+          </div>
+        `).join('');
+
+        areaName.textContent = area;
+        areaStatus.textContent = '';
+        areaCard.hidden = true;
+        restaurantsCard.hidden = false;
+      } catch (err) {
+        console.error(err);
+        areaStatus.textContent = 'Error loading restaurants: ' + err.message;
+      }
     });
 
-    orderForm.addEventListener('submit', (e) => {
-      e.preventDefault();
+    // Step 2: Restaurant selected -> Show menu
+    window.selectRestaurant = async function(restaurantNameParam) {
+      currentRestaurant = restaurantNameParam;
+      restaurantName.textContent = restaurantNameParam;
+      orderStatus.textContent = 'Loading menu...';
 
-      const checked = [...orderForm.querySelectorAll('input[name="item"]:checked')];
-      if (!checked.length) {
-        orderStatus.textContent = 'Pick at least one meal.';
+      try {
+        const meals = await window.MealHub.listMealsByArea(currentArea);
+        const restaurantMeals = meals.filter(m => (m.Restaurant || 'Unknown Restaurant') === restaurantNameParam);
+
+        mealsList.innerHTML = restaurantMeals.map(m => `
+          <div class="meal-item">
+            ${m.ImageUrl ? `<img src="${m.ImageUrl}" alt="${m.Name}" class="meal-image" />` : ''}
+            <div class="meal-details">
+              <h4>${m.Name}</h4>
+              <p class="meal-description">${m.Description || ''}</p>
+              <div class="meal-meta">
+                <span class="meal-price">$${Number(m.Price).toFixed(2)}</span>
+                <span class="meal-prep">⏱️ ${m.PrepMinutes} min</span>
+              </div>
+            </div>
+            <button type="button" class="btn-add" onclick="addToCart('${m.PartitionKey}', '${m.RowKey}', '${m.Name.replace(/'/g, "\\'")}', '${currentRestaurant.replace(/'/g, "\\'")}', ${m.Price}, ${m.PrepMinutes})">
+              Add to order
+            </button>
+          </div>
+        `).join('');
+
+        orderStatus.textContent = '';
+        restaurantsCard.hidden = true;
+        orderingCard.hidden = false;
+      } catch (err) {
+        console.error(err);
+        orderStatus.textContent = 'Error loading menu: ' + err.message;
+      }
+    };
+
+    // Cart management
+    window.addToCart = function(pk, rk, name, restaurant, price, prep) {
+      cart.push({
+        pk,
+        rk,
+        name,
+        restaurant,
+        price: Number(price),
+        prep: Number(prep)
+      });
+      updateCart();
+    };
+
+    window.removeFromCart = function(index) {
+      cart.splice(index, 1);
+      updateCart();
+    };
+
+    function updateCart() {
+      if (cart.length === 0) {
+        cartSection.hidden = true;
         return;
       }
 
-      const total = checked.reduce((s, el) => s + Number(el.dataset.price), 0);
-      // Simple ETA heuristic: max prep + 10 minutes delivery
-      const eta = Math.max(...checked.map(el => Number(el.dataset.prep))) + 10;
+      cartSection.hidden = false;
+      
+      cartItems.innerHTML = cart.map((item, index) => `
+        <div class="cart-item">
+          <div class="cart-item-info">
+            <strong>${item.name}</strong>
+          </div>
+          <div class="cart-item-price">
+            $${item.price.toFixed(2)}
+            <button type="button" class="btn-remove" onclick="removeFromCart(${index})">✕</button>
+          </div>
+        </div>
+      `).join('');
+      
+      const total = cart.reduce((sum, item) => sum + item.price, 0);
+      cartTotal.textContent = total.toFixed(2);
+    }
 
-      confirmText.textContent =
-        `Thanks! Your order of ${checked.length} item(s) totals $${total.toFixed(2)}.
-         Estimated delivery time ~ ${eta} minutes.`;
+    clearCartBtn.addEventListener('click', () => {
+      cart = [];
+      updateCart();
+    });
 
-      mealsCard.hidden = true;
+    // Step 3: Place order -> Show confirmation
+    orderForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      if (!cart.length) {
+        orderStatus.textContent = 'Your cart is empty.';
+        return;
+      }
+
+      const total = cart.reduce((sum, item) => sum + item.price, 0);
+      const maxPrep = Math.max(...cart.map(item => item.prep));
+      const eta = maxPrep + 10; // Add 10 minutes for delivery
+
+      const itemsList = cart.map(item => 
+        `<li>${item.name} - $${item.price.toFixed(2)}</li>`
+      ).join('');
+
+      confirmText.innerHTML = `
+        <div class="confirmation-details">
+          <p><strong>Restaurant:</strong> ${currentRestaurant}</p>
+          <p><strong>Delivery Area:</strong> ${currentArea}</p>
+          <p><strong>Delivery Address:</strong> ${orderForm.customerAddress.value}</p>
+          ${orderForm.customerName.value ? `<p><strong>Customer Name:</strong> ${orderForm.customerName.value}</p>` : ''}
+          
+          <h3>Order Items:</h3>
+          <ul class="order-items-list">
+            ${itemsList}
+          </ul>
+          
+          <div class="order-summary">
+            <p class="total-cost"><strong>Total Cost: $${total.toFixed(2)}</strong></p>
+            <p class="delivery-time"><strong>Estimated Delivery Time: ~${eta} minutes</strong></p>
+          </div>
+        </div>
+      `;
+
+      // Clear cart and hide ordering
+      cart = [];
+      updateCart();
+      orderingCard.hidden = true;
       confirmCard.hidden = false;
+    });
+
+    // Navigation
+    backToArea.addEventListener('click', () => {
+      restaurantsCard.hidden = true;
+      areaCard.hidden = false;
+      areaSelect.value = '';
+      currentArea = '';
+    });
+
+    backToRestaurants.addEventListener('click', () => {
+      orderingCard.hidden = true;
+      restaurantsCard.hidden = false;
+      cart = [];
+      updateCart();
     });
 
     newOrder.addEventListener('click', () => {
       confirmCard.hidden = true;
-      mealsCard.hidden = true;
+      areaCard.hidden = false;
       areaSelect.value = '';
+      orderForm.reset();
+      currentArea = '';
+      currentRestaurant = '';
+      cart = [];
     });
   </script>
 </body>
