@@ -90,12 +90,21 @@
     if (!res.ok) throw new Error(`Query failed: ${res.status}`);
     const data = await res.json();
     // nometadata still returns {value: [...]}; but handle both just in case
-    return Array.isArray(data) ? data : (data.value || []);
+    const meals = Array.isArray(data) ? data : (data.value || []);
+    
+    // Add image URLs to meals
+    return meals.map(meal => {
+      if (meal.ImageBlobName) {
+        meal.ImageUrl = blobUrl(meal.ImageBlobName);
+      }
+      return meal;
+    });
   }
 
   async function addOrUpdateMeal(formData) {
     const area = formData.get('area').trim();
     const name = formData.get('name').trim();
+    const file = formData.get('image');
 
     const entity = {
       PartitionKey: area,
@@ -107,6 +116,12 @@
       Price: Number(formData.get('price')),
       Timestamp: new Date().toISOString()
     };
+
+    // If there's an image, upload it and store the blob name
+    if (file && file.size > 0) {
+      const blobName = await uploadMealImage(file, area, name);
+      entity.ImageBlobName = blobName;
+    }
 
     // Try insert first; on 409 (conflict) do MERGE to update
     let res = await insertEntity(TABLE_MEALS, entity);
