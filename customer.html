@@ -166,7 +166,7 @@
 
       try {
         const meals = await window.MealHub.listMealsByArea(currentArea);
-        const restaurantMeals = meals.filter(m => (m.Restaurant || 'Unknown Restaurant') === restaurantNameParam);
+        const restaurantMeals = meals.filter(m => (m.restaurantRowKey || 'Unknown Restaurant') === restaurantNameParam);
 
         if (restaurantMeals.length === 0) {
           mealsList.innerHTML = '<p style="text-align: center; padding: 40px; color: var(--muted);">No meals available from this restaurant yet.</p>';
@@ -179,16 +179,16 @@
 
         mealsList.innerHTML = restaurantMeals.map(m => `
           <div class="meal-item">
-            ${m.ImageUrl ? `<img src="${m.ImageUrl}" alt="${m.Name}" class="meal-image" />` : ''}
+            ${m.ImageUrl ? `<img src="${m.ImageUrl}" alt="${m.dishName}" class="meal-image" />` : ''}
             <div class="meal-details">
-              <h4>${m.Name}</h4>
-              <p class="meal-description">${m.Description || 'Delicious meal from ' + restaurantNameParam}</p>
+              <h4>${m.dishName}</h4>
+              <p class="meal-description">${m.description || 'Delicious meal from ' + restaurantNameParam}</p>
               <div class="meal-meta">
-                <span class="meal-price">$${Number(m.Price).toFixed(2)}</span>
-                <span class="meal-prep">⏱️ ${m.PrepMinutes} min</span>
+                <span class="meal-price">$${Number(m.price).toFixed(2)}</span>
+                <span class="meal-prep">⏱️ ${m.prepMinutes} min</span>
               </div>
             </div>
-            <button type="button" class="btn-add" onclick="addToCart('${m.PartitionKey}', '${m.RowKey}', '${m.Name.replace(/'/g, "\\'")}', '${currentRestaurant.replace(/'/g, "\\'")}', ${m.Price}, ${m.PrepMinutes})">
+            <button type="button" class="btn-add" onclick="addToCart('${m.PartitionKey}', '${m.RowKey}', '${m.dishName.replace(/'/g, "\\'")}', '${currentRestaurant.replace(/'/g, "\\'")}', ${m.price}, ${m.prepMinutes})">
               Add to order
             </button>
           </div>

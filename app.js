@@ -121,11 +121,11 @@
     const entity = {
       PartitionKey: area,
       RowKey: slug(name),
-      Restaurant: formData.get('restaurant').trim(),
-      Name: name,
-      Description: formData.get('description')?.trim() || '',
-      PrepMinutes: Number(formData.get('prep')),
-      Price: Number(formData.get('price')),
+      restaurantRowKey: formData.get('restaurant').trim(),
+      dishName: name,
+      description: formData.get('description')?.trim() || '',
+      prepMinutes: Number(formData.get('prep')),
+      price: Number(formData.get('price')),
       Timestamp: new Date().toISOString()
     };
 
