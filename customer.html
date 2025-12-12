@@ -158,6 +158,16 @@
 
     // Step 2: Restaurant selected -> Show menu
     window.selectRestaurant = async function(restaurantNameParam) {
+      // If cart has items from a different restaurant, clear it
+      if (cart.length > 0 && cart[0].restaurant !== restaurantNameParam) {
+        if (confirm(`You have items in your cart from "${cart[0].restaurant}". Switching to "${restaurantNameParam}" will clear your cart. Continue?`)) {
+          cart = [];
+          updateCart();
+        } else {
+          return; // User cancelled, don't switch restaurants
+        }
+      }
+      
       currentRestaurant = restaurantNameParam;
       restaurantName.textContent = restaurantNameParam;
       orderStatus.textContent = 'Loading menu...';
@@ -185,10 +195,10 @@
               <p class="meal-description">${m.description || 'Delicious meal from ' + restaurantNameParam}</p>
               <div class="meal-meta">
                 <span class="meal-price">$${Number(m.price).toFixed(2)}</span>
-                <span class="meal-prep">⏱️ ${m.prepMinutes} </span>
+                <span class="meal-prep">⏱️ ${Number(m.prepMinutes) || 0} min</span>
               </div>
             </div>
-            <button type="button" class="btn-add" onclick="addToCart('${m.PartitionKey}', '${m.RowKey}', '${m.dishName.replace(/'/g, "\\'")}', '${currentRestaurant.replace(/'/g, "\\'")}', ${m.price}, ${m.prepMinutes})">
+            <button type="button" class="btn-add" onclick="addToCart('${m.PartitionKey}', '${m.RowKey}', '${m.dishName.replace(/'/g, "\\'")}', '${currentRestaurant.replace(/'/g, "\\'")}', ${Number(m.price)}, ${Number(m.prepMinutes) || 0})">
               Add to order
             </button>
           </div>
@@ -208,15 +218,35 @@
 
     // Cart management
     window.addToCart = function(pk, rk, name, restaurant, price, prep) {
+      // Convert to numbers to ensure proper type
+      const priceNum = Number(price) || 0;
+      const prepNum = Number(prep) || 0;
+      
+      // Validate: All items must be from the same restaurant
+      if (cart.length > 0) {
+        const firstRestaurant = cart[0].restaurant;
+        if (firstRestaurant !== restaurant) {
+          orderStatus.textContent = `⚠️ You can only order from one restaurant at a time. Your cart contains items from "${firstRestaurant}". Please clear your cart or complete that order first.`;
+          orderStatus.className = 'status error';
+          // Scroll to status message
+          orderStatus.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          return;
+        }
+      }
+
       cart.push({
         pk,
         rk,
         name,
         restaurant,
-        price: Number(price),
-        prep: Number(prep)
+        price: priceNum,
+        prep: prepNum
       });
       updateCart();
+      
+      // Clear any previous error messages
+      orderStatus.textContent = '';
+      orderStatus.className = 'status';
     };
 
     window.removeFromCart = function(index) {
@@ -232,18 +262,26 @@
 
       cartSection.hidden = false;
       
-      cartItems.innerHTML = cart.map((item, index) => `
-        <div class="cart-item">
-          <div class="cart-item-info">
-            <strong>${item.name}</strong>
-            <small>${item.restaurant} • ⏱️ ${item.prep} min</small>
-          </div>
-          <div class="cart-item-price">
-            $${item.price.toFixed(2)}
-            <button type="button" class="btn-remove" onclick="removeFromCart(${index})" title="Remove item">✕</button>
-          </div>
+      // Show restaurant name at the top of cart
+      const cartRestaurant = cart[0].restaurant;
+      
+      cartItems.innerHTML = `
+        <div style="background: var(--brand-light); padding: 12px; border-radius: 8px; margin-bottom: 12px; text-align: center;">
+          <strong style="color: var(--brand-dark);">🍽️ Ordering from: ${cartRestaurant}</strong>
         </div>
-      `).join('');
+        ${cart.map((item, index) => `
+          <div class="cart-item">
+            <div class="cart-item-info">
+              <strong>${item.name}</strong>
+              <small>⏱️ ${item.prep} min</small>
+            </div>
+            <div class="cart-item-price">
+              $${item.price.toFixed(2)}
+              <button type="button" class="btn-remove" onclick="removeFromCart(${index})" title="Remove item">✕</button>
+            </div>
+          </div>
+        `).join('')}
+      `;
       
       const total = cart.reduce((sum, item) => sum + item.price, 0);
       const itemCount = cart.length;
@@ -269,9 +307,25 @@
         return;
       }
 
-      const total = cart.reduce((sum, item) => sum + item.price, 0);
-      const maxPrep = Math.max(...cart.map(item => item.prep));
+      // Validate all items are from the same restaurant
+      const restaurants = [...new Set(cart.map(item => item.restaurant))];
+      if (restaurants.length > 1) {
+        orderStatus.textContent = '⚠️ Error: Your cart contains items from multiple restaurants. Please ensure all items are from the same restaurant.';
+        orderStatus.className = 'status error';
+        return;
+      }
+
+      // Show confirmation dialog
+      const total = cart.reduce((sum, item) => sum + Number(item.price || 0), 0);
+      const prepTimes = cart.map(item => Number(item.prep || 0)).filter(p => !isNaN(p));
+      const maxPrep = prepTimes.length > 0 ? Math.max(...prepTimes) : 0;
       const eta = maxPrep + 15; // Add 15 minutes for delivery
+      
+      const confirmMessage = `Confirm your order?\n\nRestaurant: ${cart[0].restaurant}\nItems: ${cart.length}\nTotal: $${total.toFixed(2)}\nEstimated delivery: ${eta} minutes`;
+      
+      if (!confirm(confirmMessage)) {
+        return; // User cancelled
+      }
 
       const itemsList = cart.map((item, index) => 
         `<li>
@@ -337,10 +391,18 @@
     });
 
     backToRestaurants.addEventListener('click', () => {
+      // Warn if cart has items
+      if (cart.length > 0) {
+        if (!confirm(`You have ${cart.length} item(s) in your cart. Going back will clear your cart. Continue?`)) {
+          return; // User cancelled
+        }
+      }
       orderingCard.hidden = true;
       restaurantsCard.hidden = false;
       cart = [];
       updateCart();
+      orderStatus.textContent = '';
+      orderStatus.className = 'status';
     });
 
     newOrder.addEventListener('click', () => {
