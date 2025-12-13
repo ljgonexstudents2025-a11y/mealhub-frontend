@@ -103,23 +103,39 @@
     });
   }
 
-  async function listRestaurantsByArea(area) {
-    // Query the Restaurants table by area
-    const a = String(area).replace(/'/g, "''");
-    const extra = `&$filter=PartitionKey eq '${encodeURIComponent(a)}'`;
-    const res = await fetch(tableUrl(TABLE_RESTAURANTS, extra), { headers: ODATA_HEADERS });
-    if (!res.ok) throw new Error(`Query failed: ${res.status}`);
-    const data = await res.json();
-    const restaurants = Array.isArray(data) ? data : (data.value || []);
-    
-    // Add image URLs to restaurants from restaurantlogos container
-    return restaurants.map(restaurant => {
-      if (restaurant.ImageBlobName) {
-        restaurant.ImageUrl = blobUrl(restaurant.ImageBlobName, RESTAURANT_LOGOS_CONTAINER);
-      }
-      return restaurant;
-    });
+  // Put this somewhere in your config
+const FUNCTION_BASE_URL = 'https://httpquerytablegroup5.azurewebsites.net';
+const LIST_RESTAURANTS_PATH = '/api/HTTPQueryTable'; // from Azure
+
+async function listRestaurantsByArea(area) {
+  // Build the function URL
+  const url = `${FUNCTION_BASE_URL}${LIST_RESTAURANTS_PATH}?area=${encodeURIComponent(area)}`;
+  console.log('Fetching restaurants from URL:', url);
+
+  const res = await fetch(url, {
+    method: 'GET'
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    console.error('Function error response:', text);
+    throw new Error(`Error loading restaurants: HTTP ${res.status}`);
   }
+
+  const data = await res.json();
+  const restaurants = Array.isArray(data) ? data : (data.value || []);
+
+  // Add image URLs if needed
+  return restaurants.map(restaurant => {
+    // If your Python function already returns logoUrl you can use that
+    // If you still store only ImageBlobName and build a URL on the client:
+    if (!restaurant.ImageUrl && restaurant.ImageBlobName) {
+      restaurant.ImageUrl = blobUrl(restaurant.ImageBlobName, RESTAURANT_LOGOS_CONTAINER);
+    }
+    return restaurant;
+  });
+}
+
 
   async function addOrUpdateMeal(formData) {
     const area = formData.get('area').trim();
