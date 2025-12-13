@@ -137,39 +137,57 @@ async function listRestaurantsByArea(area) {
 }
 
 
-  async function addOrUpdateMeal(formData) {
-    const area = formData.get('area').trim();
-    const name = formData.get('name').trim();
-    const file = formData.get('image');
+async function addOrUpdateMeal(formData) {
+  const area = formData.get('area')?.trim();
+  const name = formData.get('name')?.trim();
+  const file = formData.get('image');
 
-    const entity = {
-      PartitionKey: area,
-      RowKey: slug(name),
-      restaurantRowKey: formData.get('restaurant').trim(),
-      dishName: name,
-      description: formData.get('description')?.trim() || '',
-      prepMinutes: Number(formData.get('prep')),
-      price: Number(formData.get('price')),
-      Timestamp: new Date().toISOString()
-    };
+  const restaurant = formData.get('restaurant')?.trim();
+  const description = formData.get('description')?.trim() || '';
+  const prep = formData.get('prep');
+  const price = formData.get('price');
 
-    // If there's an image, upload it and store the blob name
-    if (file && file.size > 0) {
-      const blobName = await uploadMealImage(file, area, name);
-      entity.ImageBlobName = blobName;
-    }
-
-    // Try insert first; on 409 (conflict) do MERGE to update
-    let res = await insertEntity(TABLE_MEALS, entity);
-    if (res.status === 409) {
-      res = await mergeEntity(TABLE_MEALS, entity.PartitionKey, entity.RowKey, entity);
-    }
-    if (!res.ok && res.status !== 204) {
-      const t = await res.text();
-      throw new Error(`${res.status} ${res.statusText} – ${t}`);
-    }
-    return true;
+  if (!area || !name || !restaurant || !prep || !price) {
+    throw new Error('Missing required fields: restaurant, name, prep, price, area');
   }
+
+  // Prepare payload for the Python addMeal function
+  const payload = {
+    restaurant,     // maps to "Restaurant" in the table
+    name,           // used for RowKey slug + Name
+    description,
+    prep,
+    price,
+    area
+  };
+
+  // If there's an image, upload it and send the blob name to the backend
+  if (file && file.size > 0) {
+    const blobName = await uploadMealImage(file, area, name);
+    payload.ImageBlobName = blobName;
+  }
+
+  const url = `${cfg.FUNCTION_BASE_URL}${cfg.ADD_MEAL_PATH}`;
+  console.log('Calling addMeal at:', url, 'with payload:', payload);
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    console.error('addMeal error response:', text);
+    throw new Error(`Error saving meal: ${res.status} – ${text}`);
+  }
+
+  const result = await res.json();
+  console.log('addMeal result:', result);
+  return result; // or `return true;` if you just need success
+}
 
   // Expose a single global object
   window.MealHub = {

@@ -4,6 +4,7 @@ window.APP_CONFIG = {
   FUNCTION_BASE_URL: 'https://httpquerytablegroup5.azurewebsites.net',
   GET_MEALS_PATH: '/api/getMealsByArea',
   LIST_RESTAURANTS_PATH: '/api/HTTPQueryTable',
+  ADD_MEAL_PATH: '/api/addMeal',
 
   TABLE_MEALS: "meals1",
   TABLE_RESTAURANTS: "Restaurants",
