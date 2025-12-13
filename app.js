@@ -84,6 +84,19 @@
     return res;
   }
 
+
+  // Normalize meal object to ensure consistent property names
+  function normalizeMeal(meal) {
+    meal.prepMinutes = meal.prepMinutes || meal.PrepMinutes || 0;
+    meal.dishName = meal.dishName || meal.DishName || meal.dishname || '';
+    meal.price = meal.price || meal.Price || 0;
+    // Add more normalization as needed
+    if (meal.ImageBlobName && !meal.ImageUrl) {
+      meal.ImageUrl = blobUrl(meal.ImageBlobName);
+    }
+    return meal;
+  }
+
   async function listByArea(area) {
     // $filter uses single quotes; escape single quotes in area
     const a = String(area).replace(/'/g, "''");
@@ -93,14 +106,8 @@
     const data = await res.json();
     // nometadata still returns {value: [...]}; but handle both just in case
     const meals = Array.isArray(data) ? data : (data.value || []);
-    
-    // this adds image URLs to meals
-    return meals.map(meal => {
-      if (meal.ImageBlobName) {
-        meal.ImageUrl = blobUrl(meal.ImageBlobName);
-      }
-      return meal;
-    });
+    // Normalize and add image URLs
+    return meals.map(normalizeMeal);
   }
 
   // Put this somewhere in your config

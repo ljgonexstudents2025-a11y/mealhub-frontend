@@ -187,7 +187,8 @@
           return;
         }
 
-        mealsList.innerHTML = restaurantMeals.map(m => `
+
+        mealsList.innerHTML = restaurantMeals.map((m, index) => `
           <div class="meal-item">
             ${m.ImageUrl ? `<img src="${m.ImageUrl}" alt="${m.dishName}" class="meal-image" />` : ''}
             <div class="meal-details">
@@ -195,14 +196,17 @@
               <p class="meal-description">${m.description || 'Delicious meal from ' + restaurantNameParam}</p>
               <div class="meal-meta">
                 <span class="meal-price">$${Number(m.price).toFixed(2)}</span>
-                <span class="meal-prep">⏱️ ${Number(m.prepMinutes) || 0} min</span>
+                <span class="meal-prep">⏱️ ${m.prepMinutes !== undefined && m.prepMinutes !== null && m.prepMinutes !== '' ? m.prepMinutes : '?'} min</span>
               </div>
             </div>
-            <button type="button" class="btn-add" onclick="addToCart('${m.PartitionKey}', '${m.RowKey}', '${m.dishName.replace(/'/g, "\\'")}', '${currentRestaurant.replace(/'/g, "\\'")}', ${Number(m.price)}, ${Number(m.prepMinutes) || 0})">
+            <button type="button" class="btn-add" data-meal-index="${index}">
               Add to order
             </button>
           </div>
         `).join('');
+
+        // Store meals data for event delegation
+        window.currentMeals = restaurantMeals;
 
         orderStatus.textContent = '';
         orderStatus.className = 'status';
@@ -273,7 +277,7 @@
           <div class="cart-item">
             <div class="cart-item-info">
               <strong>${item.name}</strong>
-              <small>⏱️ ${item.prep} min</small>
+              <small>⏱️ ${item.prepMinutes !== undefined ? item.prepMinutes : item.prep} min</small>
             </div>
             <div class="cart-item-price">
               $${item.price.toFixed(2)}
@@ -317,9 +321,9 @@
 
       // Show confirmation dialog
       const total = cart.reduce((sum, item) => sum + Number(item.price || 0), 0);
-      const prepTimes = cart.map(item => Number(item.prep || 0)).filter(p => !isNaN(p));
-      const maxPrep = prepTimes.length > 0 ? Math.max(...prepTimes) : 0;
-      const eta = maxPrep + 15; // Add 15 minutes for delivery
+  const prepTimes = cart.map(item => Number(item.prepMinutes !== undefined ? item.prepMinutes : item.prep || 0)).filter(p => !isNaN(p));
+  const sumPrep = prepTimes.reduce((sum, p) => sum + p, 0);
+  const eta = sumPrep + 20; // Sum of prep times + 20 minutes for delivery
       
       const confirmMessage = `Confirm your order?\n\nRestaurant: ${cart[0].restaurant}\nItems: ${cart.length}\nTotal: $${total.toFixed(2)}\nEstimated delivery: ${eta} minutes`;
       
@@ -331,7 +335,7 @@
         `<li>
           <strong>${item.name}</strong>
           <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-            <span style="color: var(--muted);">⏱️ ${item.prep} prep</span>
+            <span style="color: var(--muted);">⏱️ ${item.prepMinutes !== undefined ? item.prepMinutes : item.prep} prep</span>
             <span style="color: var(--brand); font-weight: 700;">$${item.price.toFixed(2)}</span>
           </div>
         </li>`
@@ -413,6 +417,24 @@
       currentArea = '';
       currentRestaurant = '';
       cart = [];
+    });
+
+    // Event delegation for "Add to order" button (restores previous functionality, does not change prepMinutes logic)
+    mealsList.addEventListener('click', (e) => {
+      if (e.target.classList.contains('btn-add')) {
+        const index = parseInt(e.target.getAttribute('data-meal-index'), 10);
+        const meal = window.currentMeals[index];
+        if (meal) {
+          addToCart(
+            meal.PartitionKey,
+            meal.RowKey,
+            meal.dishName,
+            currentRestaurant,
+            meal.price,
+            meal.prepMinutes
+          );
+        }
+      }
     });
   </script>
 </body>
