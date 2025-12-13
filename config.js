@@ -1,5 +1,10 @@
 window.APP_CONFIG = {
   STORAGE_ACCOUNT: "group5five",
+
+  FUNCTION_BASE_URL: 'https://httpquerytablegroup5.azurewebsites.net',
+  GET_MEALS_PATH: '/api/getMealsByArea',
+  LIST_RESTAURANTS_PATH: '/api/HTTPQueryTable',
+
   TABLE_MEALS: "meals1",
   TABLE_RESTAURANTS: "Restaurants",
   BLOB_CONTAINER: "mealimages",
@@ -10,5 +15,3 @@ window.APP_CONFIG = {
     accent: "#ffb703"
   }
 };
-
-

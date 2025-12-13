@@ -84,39 +84,32 @@
     return res;
   }
 
-
-  // Normalize meal object to ensure consistent property names
-  function normalizeMeal(meal) {
-    meal.prepMinutes = meal.prepMinutes || meal.PrepMinutes || 0;
-    meal.dishName = meal.dishName || meal.DishName || meal.dishname || '';
-    meal.price = meal.price || meal.Price || 0;
-    // Add more normalization as needed
-    if (meal.ImageBlobName && !meal.ImageUrl) {
-      meal.ImageUrl = blobUrl(meal.ImageBlobName);
-    }
-    return meal;
-  }
-
   async function listByArea(area) {
-    // $filter uses single quotes; escape single quotes in area
-    const a = String(area).replace(/'/g, "''");
-    const extra = `&$filter=PartitionKey eq '${encodeURIComponent(a)}'`;
-    const res = await fetch(tableUrl(TABLE_MEALS, extra), { headers: ODATA_HEADERS });
-    if (!res.ok) throw new Error(`Query failed: ${res.status}`);
-    const data = await res.json();
-    // nometadata still returns {value: [...]}; but handle both just in case
-    const meals = Array.isArray(data) ? data : (data.value || []);
-    // Normalize and add image URLs
-    return meals.map(normalizeMeal);
-  }
-
-  // Put this somewhere in your config
-const FUNCTION_BASE_URL = 'https://httpquerytablegroup5.azurewebsites.net';
-const LIST_RESTAURANTS_PATH = '/api/HTTPQueryTable'; // from Azure
+    // Call the Python Azure Function instead of Table Storage directly
+    const url = `${cfg.FUNCTION_BASE_URL}${cfg.GET_MEALS_PATH}?area=${encodeURIComponent(area)}`;
+    console.log('Fetching meals from URL:', url);
+  
+    const res = await fetch(url, { method: 'GET' });
+    if (!res.ok) {
+      const text = await res.text();
+      console.error('Error response from getMealsByArea:', text);
+      throw new Error(`Query failed: ${res.status}`);
+    }
+  
+    const meals = await res.json();
+  
+    // Add image URLs to meals (same logic you already had)
+    return meals.map(meal => {
+      if (meal.ImageBlobName) {
+        meal.ImageUrl = blobUrl(meal.ImageBlobName);
+      }
+      return meal;
+    });
+  }  
 
 async function listRestaurantsByArea(area) {
   // Build the function URL
-  const url = `${FUNCTION_BASE_URL}${LIST_RESTAURANTS_PATH}?area=${encodeURIComponent(area)}`;
+  const url = `${cfg.FUNCTION_BASE_URL}${cfg.LIST_RESTAURANTS_PATH}?area=${encodeURIComponent(area)}`;
   console.log('Fetching restaurants from URL:', url);
 
   const res = await fetch(url, {
@@ -186,8 +179,3 @@ async function listRestaurantsByArea(area) {
     uploadMealImage
   };
 })();
-
-
-
-
-
