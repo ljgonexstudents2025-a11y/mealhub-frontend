@@ -199,7 +199,7 @@
                 <span class="meal-prep">⏱️ ${m.PrepMinutes} min</span>
               </div>
             </div>
-            <button type="button" class="btn-add" onclick="addToCart('${m.PartitionKey}', '${m.RowKey}', '${m.Name.replace(/'/g, "\\'")}', '${currentRestaurant.replace(/'/g, "\\'")}', ${Number(m.Price)}, ${Number(m.PrepMinutes)})">
+            <button type="button" class="btn-add" onclick="addToCart('${m.PartitionKey}', '${m.RowKey}', '${m.Name.replace(/'/g, "\\'")}', '${currentRestaurant.replace(/'/g, "\\'")}', '${Number(m.Price)}', '${m.PrepMinutes}')">
               Add to order
             </button>
           </div>
@@ -224,7 +224,7 @@
     window.addToCart = function(pk, rk, name, restaurant, price, prep) {
       // Convert to numbers to ensure proper type
       const priceNum = Number(price) || 0;
-      const prepNum = Number(prep) || 0;
+      const prepNum = prep;
       
       // Validate: All items must be from the same restaurant
       if (cart.length > 0) {
