@@ -147,21 +147,15 @@ async function addOrUpdateMeal(formData) {
   const prep = formData.get('prep');
   const price = formData.get('price');
 
-  if (!area || !name || !restaurant || !prep || !price) {
-    throw new Error('Missing required fields: restaurant, name, prep, price, area');
-  }
-
-  // Prepare payload for the Python addMeal function
   const payload = {
-    restaurant,     // maps to "Restaurant" in the table
-    name,           // used for RowKey slug + Name
+    restaurant,     
+    name,
     description,
     prep,
     price,
     area
   };
 
-  // If there's an image, upload it and send the blob name to the backend
   if (file && file.size > 0) {
     const blobName = await uploadMealImage(file, area, name);
     payload.ImageBlobName = blobName;
@@ -174,7 +168,7 @@ async function addOrUpdateMeal(formData) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
-    },
+      },
     body: JSON.stringify(payload)
   });
 
@@ -186,7 +180,7 @@ async function addOrUpdateMeal(formData) {
 
   const result = await res.json();
   console.log('addMeal result:', result);
-  return result; // or `return true;` if you just need success
+  return result;
 }
 
   // Expose a single global object

@@ -18,7 +18,7 @@
       <h2>Register Meal Menu 🥗</h2>
       <p class="info-text">Register meals to MealHub!</p>
       
-      <form id="mealForm">
+      <form id="mealForm" novalidate>
         <div class="row">
           <label>Restaurant name *</label>
           <input name="restaurant" placeholder="Honest Greens" required />
@@ -74,45 +74,44 @@
   <script>
     const form = document.getElementById('mealForm');
     const status = document.getElementById('status');
-
+  
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      status.textContent = 'Saving to Azure Table Storage...';
+      status.textContent = 'Saving to Azure...';
       status.className = 'status loading';
-
+  
       try {
         const fd = new FormData(form);
-        
-        // Validate all required fields
-        const restaurant = fd.get('restaurant');
-        const name = fd.get('name');
-        const prep = fd.get('prep');
-        const price = fd.get('price');
-        const area = fd.get('area');
-
+  
+        // 👇 Soft validation: show a warning, but DO NOT block the call
+        const restaurant = fd.get('restaurant')?.trim();
+        const name = fd.get('name')?.trim();
+        const prep = fd.get('prep')?.trim();
+        const price = fd.get('price')?.trim();
+        const area = fd.get('area')?.trim();
+  
         if (!restaurant || !name || !prep || !price || !area) {
-          throw new Error('Please fill in all required fields');
+          // Just give a warning, but continue
+          console.warn('Some required fields are empty – backend will reject and log to queue');
         }
-
-        // Save to Azure Table Storage
-        await window.MealHub.addOrUpdateMeal(fd);
-
-        status.textContent = '✓ Successfully saved to Azure Table Storage!';
+  
+        // ✅ Always call the Function App (backend will validate + log invalid requests)
+        const result = await window.MealHub.addOrUpdateMeal(fd);
+  
+        status.textContent = '✓ Meal saved successfully!';
         status.className = 'status success';
-        
-        // Reset form after 2 seconds
+  
         setTimeout(() => {
           form.reset();
           status.textContent = '';
           status.className = 'status';
         }, 2000);
-      } 
-      catch (err) {
+      } catch (err) {
         console.error(err);
         status.textContent = "❌ Error: " + err.message;
         status.className = 'status error';
       }
     });
-  </script>
+  </script>  
 </body>
 </html>
