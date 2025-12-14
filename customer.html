@@ -196,7 +196,7 @@
               <p class="meal-description">${m.Description || 'Delicious meal from ' + restaurantNameParam}</p>
               <div class="meal-meta">
                 <span class="meal-price">$${Number(m.Price).toFixed(2)}</span>
-                <span class="meal-prep">⏱️ ${m.PrepMinutes} min</span>
+                <span class="meal-prep">⏱️ ${m.PrepMinutes}</span>
               </div>
             </div>
             <button type="button" class="btn-add" onclick="addToCart('${m.PartitionKey}', '${m.RowKey}', '${m.Name.replace(/'/g, "\\'")}', '${currentRestaurant.replace(/'/g, "\\'")}', '${Number(m.Price)}', '${m.PrepMinutes}')">
@@ -278,7 +278,7 @@
           <div class="cart-item">
             <div class="cart-item-info">
               <strong>${item.name}</strong>
-              <small>⏱️ ${item.prepMinutes !== undefined ? item.prepMinutes : item.prep} min</small>
+              <small>⏱️ ${item.prepMinutes !== undefined ? item.prepMinutes : item.prep}</small>
             </div>
             <div class="cart-item-price">
               $${item.price.toFixed(2)}
@@ -336,7 +336,7 @@
         `<li>
           <strong>${item.name}</strong>
           <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-            <span style="color: var(--muted);">⏱️ ${item.prepMinutes !== undefined ? item.prepMinutes : item.prep} prep</span>
+            <span style="color: var(--muted);">⏱️ ${item.prepMinutes !== undefined ? item.prepMinutes : item.prep} </span>
             <span style="color: var(--brand); font-weight: 700;">$${item.price.toFixed(2)}</span>
           </div>
         </li>`
