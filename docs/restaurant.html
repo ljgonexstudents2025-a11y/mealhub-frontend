@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>MealHub – Restaurant</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <img src="./brand.svg" alt="MealHub" class="brand" />
+    <h1>Restaurant Dashboard</h1>
+    <nav><a href="./customer.html">Customer Dashboard</a></nav>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Register Meal Menu 🥗</h2>
+      <p class="info-text">Register meals to MealHub!</p>
+      
+      <form id="mealForm" novalidate>
+        <div class="row">
+          <label>Restaurant name *</label>
+          <input name="restaurant" placeholder="Honest Greens" required />
+          <small>Enter the name of your restaurant</small>
+        </div>
+        
+        <div class="row">
+          <label>Dish name *</label>
+          <input name="name" placeholder="Salmon Bowl" required />
+          <small>Enter the name of the dish</small>
+        </div>
+        
+        <div class="row">
+          <label>Description</label>
+          <textarea name="description" rows="3" placeholder="Brief description of the dish"></textarea>
+          <small>Optional: Tell us about the dish!</small>
+        </div>
+        
+        <div class="row">
+          <label>Prep Time *</label>
+          <input name="prep" type="number" min="1" step="1" placeholder="30" required />
+          <small>How long does it takes to make the dish</small>
+        </div>
+        
+        <div class="row">
+          <label>Price *</label>
+          <input name="price" type="number" min="0" step="0.01" placeholder="12.99" required />
+          <small>Price in dollars $12.99</small>
+        </div>
+        
+        <div class="row">
+          <label>Delivery area *</label>
+          <select name="area" required>
+            <option value="" selected disabled>Select delivery area</option>
+            <option value="Salamanca">Salamanca</option>
+            <option value="Chamberi">Chamberí</option>
+            <option value="Chamartin">Chamartín</option>
+          </select>
+          <small>The Madrid neighborhood where you can deliver this meal</small>
+        </div>
+        
+        <div class="actions">
+          <button type="submit">Save meal</button>
+          <button type="reset" class="secondary">Clear form</button>
+        </div>
+      </form>
+      
+      <p id="status" class="status"></p>
+    </section>
+
+  <script src="./config.js"></script>
+  <script src="./app.js"></script>
+  <script>
+    const form = document.getElementById('mealForm');
+    const status = document.getElementById('status');
+  
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      status.textContent = 'Saving to Azure...';
+      status.className = 'status loading';
+  
+      try {
+        const fd = new FormData(form);
+  
+        // 👇 Soft validation: show a warning, but DO NOT block the call
+        const restaurant = fd.get('restaurant')?.trim();
+        const name = fd.get('name')?.trim();
+        const prep = fd.get('prep')?.trim();
+        const price = fd.get('price')?.trim();
+        const area = fd.get('area')?.trim();
+  
+        if (!restaurant || !name || !prep || !price || !area) {
+          // Just give a warning, but continue
+          console.warn('Some required fields are empty – backend will reject and log to queue');
+        }
+  
+        // ✅ Always call the Function App (backend will validate + log invalid requests)
+        const result = await window.MealHub.addOrUpdateMeal(fd);
+  
+        status.textContent = '✓ Meal saved successfully!';
+        status.className = 'status success';
+  
+        setTimeout(() => {
+          form.reset();
+          status.textContent = '';
+          status.className = 'status';
+        }, 2000);
+      } catch (err) {
+        console.error(err);
+        status.textContent = "❌ Error: " + err.message;
+        status.className = 'status error';
+      }
+    });
+  </script>  
+</body>
+</html>
